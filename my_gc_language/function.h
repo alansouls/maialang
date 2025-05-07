@@ -30,8 +30,8 @@ namespace MaiaLang
 	private:
 		Scope* m_scope;
 		std::string m_name;
-		std::optional<TypeInfo> m_returnType;
 		std::vector<FunctionParameter> m_parameters;
+		std::optional<TypeInfo> m_returnType;
 		std::vector<Expression> m_expressions;
 	};
 }

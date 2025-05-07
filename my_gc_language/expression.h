@@ -7,6 +7,7 @@
 
 namespace MaiaLang
 {
+	class Scope;
 	class Expression;
 
 	struct VariableDeclarationParameters
@@ -140,7 +141,7 @@ namespace MaiaLang
 	public:
 		Expression(const ExpressionParameters& parameters);
 
-		auto evaluate() const->std::optional<ExpressionValue>;
+		auto evaluate(Scope &scope) const->std::optional<ExpressionValue>;
 	private:
 		ExpressionParameters m_parameters;
 	};

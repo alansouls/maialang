@@ -76,7 +76,7 @@ namespace MaiaLang
 
 		Expression exp = ExpressionParameters(expressionString);
 
-		return exp.evaluate().value().memoryValue;
+		return exp.evaluate(scope).value().memoryValue;
 	}
 
 	auto Interpreter::processExpression(Scope& scope, const std::smatch& expressionMatch) -> std::optional<MemoryAllocation>

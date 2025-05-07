@@ -1,4 +1,5 @@
 #include "expression.h"
+#include "scope.h"
 namespace MaiaLang
 {
 	static auto getConstValueExpressionValue(const ExpressionParameters& parameters) -> ExpressionValue;
@@ -8,8 +9,10 @@ namespace MaiaLang
 	{
 	}
 
-	auto Expression::evaluate() const -> std::optional<ExpressionValue>
+	auto Expression::evaluate(Scope &scope) const -> std::optional<ExpressionValue>
 	{
+		(void)scope;
+
 		switch (m_parameters.type()) {
 		case OperationType::ConstValue:
 			return getConstValueExpressionValue(m_parameters);

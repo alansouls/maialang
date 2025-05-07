@@ -19,9 +19,9 @@ public:
 	auto allocation() -> const MemoryAllocation&;
 
 private:
+	const Scope* m_scope;
 	const std::string m_name;
 	const TypeInfo m_typeInfo;
-	const Scope* m_scope;
 
 	std::optional<MemoryAllocation> m_allocation;
 };

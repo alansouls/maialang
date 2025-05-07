@@ -19,7 +19,7 @@ int main()
 	try {
 		interpreter.execute("test.maia", "let string c = \"Hello, World! Maia lang\";\nlet int d = 5;");
 	}
-	catch (std::runtime_error err) {
+	catch (const std::runtime_error &err) {
 		std::cerr << err.what() << '\n';
 		return -1;
 	}

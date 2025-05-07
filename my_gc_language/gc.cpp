@@ -56,7 +56,7 @@ void GC::printInfo()
 	}
 
 	std::printf("Size allocated: %lld bytes\n", totalAllocated);
-	std::printf("Total allocations: %lld\n", m_instance->m_allocations.size());
+	std::printf("Total allocations: %zu\n", m_instance->m_allocations.size());
 }
 
 void MaiaLang::GC::init()
