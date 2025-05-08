@@ -8,7 +8,11 @@
 
 namespace MaiaLang
 {
-	static const char* variableDeclarationPattern = R"(let[\s]+(\w+)\s+(\w+)(\s*|\s*=(.+));)";
+	static const char* functionCallPattern = R"((\w+)\((.*)\))";
+
+	static const std::regex functionCallRegex(functionCallPattern, std::regex_constants::icase);
+
+	static const char* variableDeclarationPattern = R"(let[\s]+(\w+)\s+(\w+)(\s*|\s*=(.+)))";
 
 	static const std::regex variableDeclarationExpressionRegex(variableDeclarationPattern, std::regex_constants::icase);
 
@@ -16,83 +20,107 @@ namespace MaiaLang
 
 	static const std::regex constValueRegex(constValuePattern);
 
-	static const std::string expressionPattern(std::format("({})|({})", variableDeclarationPattern, constValuePattern));
+	static const std::string valueExpressionPattern(std::format("({})|({})", constValuePattern, functionCallPattern));
+
+	static const std::regex valueExpressionRegex(valueExpressionPattern, std::regex_constants::icase);
+
+	static const std::string expressionPattern(std::format("(({})|({})|({}))\\s*;", variableDeclarationPattern, constValuePattern, functionCallPattern));
 
 	static const std::regex expressionRegex(expressionPattern, std::regex_constants::icase);
 
 	void Interpreter::execute(const std::string& fileName, const std::string& codeData)
 	{
-		Scope fileScope(fileName);
+		Scope fileScope(fileName, Scope::global().lock());
 
 		auto expressionMatchBegin = std::sregex_iterator(codeData.begin(), codeData.end(), expressionRegex);
 		auto expressionMatchEnd = std::sregex_iterator();
 
 		for (std::sregex_iterator i = expressionMatchBegin; i != expressionMatchEnd; ++i) {
 			std::smatch match = *i;
-			processExpression(fileScope, match);
+			processExpression(fileScope, match[1]);
 		}
 
-		Function::BuiltIn::println().lock()->execute({ fileScope.getVariable("c").lock()->allocation() });
-		
 		GC::printInfo();
 	}
 
-	void Interpreter::processVariableDeclarationExpression(Scope& scope, const std::smatch& variableDeclarationMatch)
+	auto Interpreter::parseVariableDeclarationExpression(const std::smatch& variableDeclarationMatch) -> std::unique_ptr<Expression>
 	{
-		auto typeName = variableDeclarationMatch[2].str();
-		auto varName = variableDeclarationMatch[3].str();
+		auto typeName = variableDeclarationMatch[1].str();
+		auto varName = variableDeclarationMatch[2].str();
 
-		TypeInfo type;
-		if (typeName == "int") {
-			type = TypeInfo::BuiltIn::integer();
-		}
-		else if (typeName == "string") {
-			type = TypeInfo::BuiltIn::string();
-		}
-		else {
-			throw std::runtime_error("Unknown type: " + typeName);
-		}
+		VariableDeclarationParameters declarationParameters{
+			.typeName = typeName,
+			.variableName = varName,
+			.assignment = {}
+		};
 
-		auto var = scope.declareVariable(varName, type);
-
-		if (variableDeclarationMatch[5].matched) {
-			auto valueExpression = StringUtils::trim(variableDeclarationMatch[5].str());
+		if (variableDeclarationMatch[4].matched) {
+			auto valueExpression = StringUtils::trim(variableDeclarationMatch[4].str());
 			std::smatch match;
-			if (!std::regex_match(valueExpression, match, expressionRegex)) {
+			if (!std::regex_match(valueExpression, match, valueExpressionRegex)) {
 				throw std::runtime_error("Invalid expression in variable assignment");
 			}
-			auto expressionValue = processExpression(scope, match);
-			if (!expressionValue.has_value()) {
-				throw std::runtime_error("Expression to assign to variable resulted in no value");
-			}
 
-			var.lock()->assign(expressionValue.value());
+			declarationParameters.assignment = VariableAssignmentParameters{
+				.variableName = varName,
+				.expression = parseExpression(match.str())
+			};
 		}
+
+		return std::make_unique<Expression>(ExpressionParameters(declarationParameters));
 	}
 
-	auto Interpreter::processConstValueExpression(Scope& scope, const std::smatch& constValueExpression) -> MemoryAllocation
+	auto Interpreter::parseConstValueExpression(const std::smatch& constValueExpression) -> std::unique_ptr<Expression>
 	{
-		auto expressionString = constValueExpression.str();
-
-		Expression exp = ExpressionParameters(expressionString);
-
-		return exp.evaluate(scope).value().memoryValue;
+		return std::make_unique<Expression>(ExpressionParameters(constValueExpression.str()));
 	}
 
-	auto Interpreter::processExpression(Scope& scope, const std::smatch& expressionMatch) -> std::optional<MemoryAllocation>
+	auto Interpreter::processExpression(Scope& scope, const std::string& expressionString) -> std::optional<MemoryAllocation>
 	{
-		auto expressionString = expressionMatch.str();
+		auto expression = parseExpression(expressionString);
 
-		if (expressionString.starts_with("let "))
-		{
-			processVariableDeclarationExpression(scope, expressionMatch);
-			return std::optional<MemoryAllocation>();
+		auto result = expression->evaluate(scope);
+
+		if (result.has_value()) {
+			return result.value().memoryValue;
 		}
 
-		if (std::smatch constValueExpressionMatch; std::regex_match(expressionString, constValueExpressionMatch, constValueRegex)) {
-			return std::optional<MemoryAllocation>(processConstValueExpression(scope, expressionMatch));
+		return std::optional<MemoryAllocation>();
+	}
+
+	auto Interpreter::parseExpression(const std::string& expressionString) -> std::unique_ptr<Expression> {
+		std::smatch subMatch;
+
+		if (std::regex_match(expressionString, subMatch, variableDeclarationExpressionRegex)) {
+			return parseVariableDeclarationExpression(subMatch);
 		}
 
-		throw std::runtime_error("Could not process expression");
+		if (std::regex_match(expressionString, subMatch, constValueRegex)) {
+			return parseConstValueExpression(subMatch);
+		}
+
+		if (std::regex_match(expressionString, subMatch, functionCallRegex)) {
+			return parseFunctionCallExpression(subMatch);
+		}
+
+		throw std::runtime_error("Could not parse expression");
+	}
+
+	auto Interpreter::parseFunctionCallExpression(const std::smatch& functionCallMatch) -> std::unique_ptr<Expression>
+	{
+		auto functionName = functionCallMatch[1].str();
+
+		auto parameters = functionCallMatch[2].str();
+
+		std::vector<std::shared_ptr<Expression>> parameterExpressions;
+
+		for (std::string& parameterExpression : StringUtils::split(parameters, ',')) {
+			parameterExpressions.push_back(parseExpression(parameterExpression));
+		}
+
+		return std::make_unique<Expression>(FunctionCallParameters{
+			.functionName = functionName,
+			.parameterExpressions = parameterExpressions
+		});
 	}
 }

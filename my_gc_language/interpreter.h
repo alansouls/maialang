@@ -6,6 +6,7 @@
 
 namespace MaiaLang
 {
+	class Expression;
 	struct MemoryAllocation;
 	class Scope;
 	class Interpreter
@@ -13,8 +14,10 @@ namespace MaiaLang
 	public:
 		void execute(const std::string& fileName, const std::string& codeData);
 	private:
-		static void processVariableDeclarationExpression(Scope& scope, const std::smatch& variableDeclarationMatch);
-		static auto processConstValueExpression(Scope& scope, const std::smatch& constValueExpression) -> MemoryAllocation;
-		static auto processExpression(Scope& scope, const std::smatch& expressionMatch) -> std::optional<MemoryAllocation>;
+		static auto parseVariableDeclarationExpression(const std::smatch& variableDeclarationMatch) -> std::unique_ptr<Expression>;
+		static auto parseConstValueExpression(const std::smatch& constValueExpression) -> std::unique_ptr<Expression>;
+		static auto processExpression(Scope& scope, const std::string& expressionString) -> std::optional<MemoryAllocation>;
+		static auto parseExpression(const std::string& expressionString) -> std::unique_ptr<Expression>;
+		static auto parseFunctionCallExpression(const std::smatch& functionCallMatch) -> std::unique_ptr<Expression>;
 	};
 }

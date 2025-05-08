@@ -1,7 +1,4 @@
-﻿// my_gc_language.cpp : Defines the entry point for the application.
-//
-
-#include "my_gc_language.h"
+﻿#include "my_gc_language.h"
 #include "gc.h"
 #include "variable.h"
 #include "expression.h"
@@ -17,7 +14,8 @@ int main()
 	Interpreter interpreter;
 
 	try {
-		interpreter.execute("test.maia", "let string c = \"Hello, World! Maia lang\";\nlet int d = 5;");
+		//interpreter.execute("test.maia", "let string c = \"Hello, World! Maia lang\";\nlet int d = 5;\nprintln(\"Hello, World - with MaiaLang!\");");
+		interpreter.execute("test.maia", "println(\"Hello World - with MaiaLang!\");");
 	}
 	catch (const std::runtime_error &err) {
 		std::cerr << err.what() << '\n';
@@ -27,13 +25,4 @@ int main()
 	GC::collect();
 
 	GC::printInfo();
-
-	return 0;
 }
-
-
-/*
-* let string a;
-* a = "Hello, World!";
-* println(a);
-*/

@@ -3,7 +3,7 @@
 #include <iostream>
 namespace MaiaLang
 {
-	static std::weak_ptr<Function> printlnFunction = Scope::global().declareFunction("println",
+	static std::weak_ptr<Function> printlnFunction = Scope::global().lock()->declareFunction("println",
 		{ FunctionParameter {.typeInfo = TypeInfo::BuiltIn::string(), .name = "text"} },
 		std::optional<TypeInfo>(),
 		{});
@@ -67,7 +67,7 @@ namespace MaiaLang
 	{
 	}
 
-	auto Function::execute(const std::vector<MemoryAllocation> &parameterValues) const -> std::optional<MemoryAllocation>
+	auto Function::execute(const std::vector<MemoryAllocation>& parameterValues) const -> std::optional<MemoryAllocation>
 	{
 		if (isBuiltInFunction(this)) {
 			executeBuiltIn(this, parameterValues);
