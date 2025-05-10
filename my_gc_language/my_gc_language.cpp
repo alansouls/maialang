@@ -10,10 +10,9 @@ int main() {
   Interpreter interpreter;
 
   try {
-    // interpreter.execute("test.maia", "let string c = \"Hello, World! Maia
-    // lang\";\nlet int d = 5;\nprintln(\"Hello, World - with MaiaLang!\");");
-    interpreter.execute("test.maia",
-                        "println(\"Hello World - with aaa MaiaLang!\");");
+    interpreter.execute(
+        "test.maia",
+        "println(\"Hello World - with aaa MaiaLang!\", \"owdkaodk\");");
   } catch (const std::runtime_error &err) {
     std::cerr << err.what() << '\n';
     return -1;
