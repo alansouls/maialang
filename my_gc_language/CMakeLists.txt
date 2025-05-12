@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (my_gc_language "my_gc_language.cpp" "my_gc_language.h" "gc.h" "gc.cpp" "variable.h" "scope.h" "scope.cpp" "variable.cpp" "expression.h" "expression.cpp" "function.h" "function.cpp" "interpreter.h" "interpreter.cpp" "string_utils.h")
+add_executable (my_gc_language "my_gc_language.cpp" "my_gc_language.h" "gc.h" "gc.cpp" "variable.h" "scope.h" "scope.cpp" "variable.cpp" "expression.h" "expression.cpp" "function.h" "function.cpp" "interpreter.h" "interpreter.cpp" "string_utils.h" "lexer.h" "lexer.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET my_gc_language PROPERTY CXX_STANDARD 20)
